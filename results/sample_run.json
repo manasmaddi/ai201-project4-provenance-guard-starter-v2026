@@ -1,0 +1,55 @@
+{
+  "submission_request": {
+    "text": "The system is designed to help users complete their tasks. The system is designed to make the process easy to understand. The system is designed to provide clear and useful information. The system is designed to support users in their daily work. The system is designed to improve the quality of the results. The system is designed to help users achieve their goals.",
+    "creator_id": "sample_writer"
+  },
+  "submission_response": {
+    "confidence": 0.8975833411397346,
+    "content_id": "ff8b9773-dd52-49cd-864a-b75d26bc8faf",
+    "guess": "ai",
+    "label": "We think this may be AI-generated. This estimate can be wrong; if you wrote this, you can appeal and explain your process.",
+    "model_score": 0.9591,
+    "status": "decided",
+    "style_score": 0.8053083528493364
+  },
+  "appeal_request": {
+    "content_id": "ff8b9773-dd52-49cd-864a-b75d26bc8faf",
+    "reasoning": "This is a demonstration appeal. Please review the drafting process before relying on this estimate."
+  },
+  "appeal_response": {
+    "content_id": "ff8b9773-dd52-49cd-864a-b75d26bc8faf",
+    "message": "Your appeal has been recorded. Your submission is under review.",
+    "status": "under_review"
+  },
+  "log": {
+    "count": 2,
+    "entries": [
+      {
+        "combined_score": 0.8975833411397346,
+        "content_id": "ff8b9773-dd52-49cd-864a-b75d26bc8faf",
+        "creator_id": "sample_writer",
+        "guess": "ai",
+        "label": "We think this may be AI-generated. This estimate can be wrong; if you wrote this, you can appeal and explain your process.",
+        "model_score": 0.9591,
+        "status": "decided",
+        "style_score": 0.8053083528493364,
+        "timestamp": "2026-11-16T05:12:59+00:00"
+      },
+      {
+        "content_id": "ff8b9773-dd52-49cd-864a-b75d26bc8faf",
+        "creator_id": "sample_writer",
+        "event": "appeal",
+        "reasoning": "This is a demonstration appeal. Please review the drafting process before relying on this estimate.",
+        "status": "under_review",
+        "timestamp": "2026-11-16T05:12:59+00:00"
+      }
+    ]
+  },
+  "health": {
+    "detector_loaded": true,
+    "detector_model": "gpt2",
+    "log_entries": 10,
+    "ok": true,
+    "rate_limiting": false
+  }
+}

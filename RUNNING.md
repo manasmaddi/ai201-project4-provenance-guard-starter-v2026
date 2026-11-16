@@ -68,16 +68,15 @@ sent it data, it sent something back.
 `/ping` still answers: if it does, the problem is in your handler; if it
 doesn't, it's the service itself, and that's a help-channel question.
 
-Then try the route you're going to build:
+Then try the implemented submission route:
 
 ```bash
 curl -X POST http://127.0.0.1:5000/submit \
   -H "Content-Type: application/json" \
-  -d '{"text": "some writing", "creator_id": "me"}'
+  -d '{"text": "Here is some writing. The system will score this sample. It returns a label and both signal scores.", "creator_id": "me"}'
 ```
 
-It returns a `501` saying it isn't built yet. **That's the correct starting
-position.**
+It returns a scored JSON decision. `/submit` and `/appeal` are implemented in this fork.
 
 ---
 
@@ -88,8 +87,8 @@ position.**
 | `POST /ping` | **works** | The example. Don't edit it |
 | `GET /health` | **works** | Is the service up, is the model loaded |
 | `GET /log` | **works** | The audit log, as JSON |
-| `POST /submit` | **you build it** | Milestones 3, 4, 5 |
-| `POST /appeal` | **you build it** | Milestone 5 |
+| `POST /submit` | implemented | Validate, score, label, and log |
+| `POST /appeal` | implemented | Record reasoning and mark under review |
 
 ---
 
@@ -239,7 +238,7 @@ your write-up; that's the deliverable.
 | File | What it does |
 |---|---|
 | `config.py` | Every setting: thresholds, weights, rate limits, the model |
-| `app.py` | The service. `/ping` and `/log` work; `/submit` and `/appeal` are yours |
+| `app.py` | The service, including implemented `/submit` and `/appeal` routes |
 | `detector.py` | Signal one — the local model. Given to you |
 | `stylometry.py` | Signal two. **Stubs — you build these** |
 | `scoring.py` | Combining and labelling. **Stubs — you build these** |
@@ -279,7 +278,7 @@ sentences, a pasted quotation. That is very cheap to do on purpose.
 
 | What you see | What it means |
 |---|---|
-| `501 not_implemented` | Correct at the start — that's the TODO in `app.py` |
+| `503 detector_unavailable` | Install dependencies and run `python detector.py` to download the model |
 | `404` from curl | Is the server running? Is the path exactly what you typed? |
 | `Cannot bind parameter 'Headers'` | You're in PowerShell, where `curl` is a different tool. Use `curl.exe`, on one line |
 | Request body arrives empty | curl needs `-H "Content-Type: application/json"` |
@@ -287,7 +286,7 @@ sentences, a pasted quotation. That is very cheap to do on purpose.
 | The first submission takes 10+ seconds | Signal one is loading the model into memory. Later ones take a second or two |
 | *Every* submission takes 10+ seconds | Something is reloading the model each call. `GET /health` shows `detector_loaded` — if it goes back to `false`, look for a reload in your handler |
 | `DetectorUnavailable` | Run `python detector.py` once to download the model |
-| `/appeal` seems to do nothing | Does the `content_id` you sent actually exist in the log? A typo there fails silently |
+| `/appeal` seems to do nothing | Does the `content_id` you sent actually exist in the log? An unknown ID returns HTTP 404 |
 | Every request gets through, no `429` ever | The decorator is uncommented but limiting is still off. Set `RATE_LIMITING_ENABLED` in `config.py` |
 | Flask-Limiter warns about storage | Shouldn't happen — `storage_uri` is preconfigured. If you changed it, put it back |
 | All three of your labels never appear | Your ranges have a gap. `scoring.label_ranges()` prints them |
