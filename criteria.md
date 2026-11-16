@@ -1,134 +1,68 @@
 # Acceptance criteria — Provenance Guard
 
-Five criteria that say what "working" means for this service, written in unit 7
-**before** you built it.
+These targets were drafted by Codex at the author's explicit request before
+running detector examples, calibration, or acceptance checks. They require the
+author's review; they are not claimed to be independently author-written.
+Keep these original targets unchanged when evaluating them in the next unit.
 
-**All five are yours.** None are given.
+## 1. Limit false accusations on human writing
 
-An acceptance criterion names a number or something plainly observable. *"The
-detector is accurate"* is an opinion — and perfect AI detection isn't possible
-anyway, so it's an opinion about something nobody can deliver. *"Of 10 pieces I
-wrote myself, at most 1 is labelled high-confidence AI"* is a criterion.
+In each of three trials on the same 10 human-written English passages (50–300
+words each), at most one passage may receive the high-confidence AI label.
+The set must include at least three plainly worded passages, two formal
+passages, and two passages written by people using English as an additional
+language. Record provenance and fix the set before the first trial; AI-created
+imitations do not count as human writing.
 
-Under each, write a sentence or two on **why that target**. *"I allow at most 1
-false positive in 10 because on a writing site a wrong accusation costs more
-than a missed detection"* is a real answer.
+**Why this target:** A wrong accusation harms a writer more than a missed AI
+submission harms this prototype. Including plain and second-language writing
+checks the model's known predictability bias instead of testing only prose it
+finds easy to classify as human.
 
-> Missing your own targets next unit costs you nothing. Setting a target so
-> easy you can't miss it does.
+## 2. Separate known human and generated samples
 
----
+For a fixed set of 10 known human passages and 10 unedited AI-generated passages
+of 50–300 words, the mean combined score for AI passages must exceed the human
+mean by at least 0.20 in each of three trials. Record origins and freeze the
+sample set before scoring. The human set may be the set from criterion 1.
 
-## Pick numbers you can defend
+**Why this target:** Different scores should represent a useful signal rather
+than tiny numerical differences. A 0.20 mean gap demands separation while not
+assuming that every individual passage can be identified correctly.
 
-**Cover at least three of these five areas.** They're prompts, not a form.
+## 3. Make all labels reachable and cover every valid score
 
-| Area | A question it could answer |
-|---|---|
-| False positives | How often may a human's writing get called AI? |
-| Score spread | How far apart should clearly-AI and clearly-human text score? |
-| Label coverage | Is every one of your three labels actually reachable? |
-| The appeal path | Does an appeal always change status and always get recorded? |
-| Bad input | What happens when `text` is missing, empty, or enormous? |
+`score_to_label` must return exactly one of `human`, `unsure`, or `ai` for every
+finite score in [0, 1], including both thresholds and endpoints. Scores 0.51 and
+0.95 must receive different labels. In addition, at least one real `/submit`
+request per label must demonstrate all three labels without mocked signals.
 
-Two things worth knowing before you pick numbers:
+**Why this target:** A label that only exists in a branch of code is not useful
+to a writer. Checking boundaries and actual requests catches both range errors
+and a combining rule that never reaches one of its labels.
 
-- **The expensive mistake is one-sided.** Missing some AI text costs the site a
-  little. Accusing a real writer costs that person a lot. A criterion that
-  treats both errors as equally bad is describing a system nobody would ship.
-- **Unit 8 tests across three trials, and the target has to hold across all
-  three.** Your first signal runs a model, so identical input can score
-  differently twice. A target of "at most 1 in 10" against trials of 2, 1, 2 is
-  a **miss**.
+## 4. Preserve every appeal and the original decision
 
----
-## 1.
+For 10 successful submissions, appeal each content ID once. All 10 appeals must
+return HTTP 200 with `status: under_review`. After a fresh read of the audit
+file, each ID must have its unchanged original decision followed by an appeal
+event containing the exact supplied reasoning and the original creator ID.
+An unknown ID must return HTTP 404 and create no appeal event.
 
-<!-- Your criterion. It must name a number. -->
+**Why this target:** A writer's challenge must survive beyond the response in
+memory. Keeping the original decision makes the dispute traceable and checking
+unknown IDs prevents confirmations for reviews that cannot happen.
 
+## 5. Reject bad input before scoring
 
+For both `/submit` and `/appeal`, malformed JSON and JSON null, arrays, strings,
+and numbers must return HTTP 400 with JSON `error` and `message` fields. Missing,
+blank, or non-string required fields must also return HTTP 400. Submissions
+above 20,000 text characters, creator IDs above 128 characters, appeal reasoning
+above 5,000 characters, and bodies above 128 KiB must return HTTP 413. None of
+these cases may invoke the model or create a decision or appeal. Valid required
+fields exactly at their maximum lengths must pass validation.
 
-**Why this target:**
-
-
-
----
-
-## 2.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
-
----
-
-## 3.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
-
----
-
-## 4.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
-
----
-
-## 5.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
-
----
-
-<!-- ─────────────────────────────────────────────────────────────────────────
-     UNIT 8 — read this before you change anything above.
-
-     If a criterion turns out to be BROKEN rather than merely unmet, you can
-     revise it, and that earns credit. But never delete or edit the original
-     line. Add the revision underneath, like this:
-
-         ## 2. Uncertain cases land in the unsure band
-
-         The system handles uncertain cases well.
-
-         **Why this target:** ...
-
-         > **Revised in unit 8:** Text I judged borderline scores between
-         > 0.4 and 0.6 in at least 4 of 5 cases.
-         >
-         > **Why revised:** "well" gave me nothing to check. I couldn't
-         > reach a verdict from it at all.
-
-     That's a revision because the criterion couldn't be MEASURED.
-
-     Lowering a target because you missed it is not a revision, and it costs
-     you the point:
-
-         ✗ "At most 1 of 10 of my own pieces flagged as AI" → "at most 3
-            of 10", because 1 of 10 turned out to be hard.
-
-     A number you missed stays where it is, gets diagnosed, and gets a fix
-     attempted. That's where the points are.
-     ───────────────────────────────────────────────────────────────────────── -->
+**Why this target:** Bad requests should have predictable, readable responses
+and must not spend model time or create misleading decisions. Exact boundary
+checks catch size limits that reject valid input or allow an oversized request.
