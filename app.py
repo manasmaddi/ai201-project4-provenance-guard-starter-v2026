@@ -18,8 +18,8 @@ doesn't, it's the service itself.
 Routes:
 
     POST /ping        the worked example. Already works. Don't edit it
-    POST /submit      ← YOU BUILD THIS (Milestone 3, 4, 5)
-    POST /appeal      ← YOU BUILD THIS (Milestone 5)
+    POST /submit      validate, score, and log a submission
+    POST /appeal      record a challenge and mark it under_review
     GET  /log         the audit log. Already works
     GET  /health      is the service up, and is the model loaded
 """
@@ -32,11 +32,10 @@ import audit
 import config
 import detector
 import stylometry
-
-app_limits = config.MAX_REQUEST_BYTES
+import scoring
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = app_limits
+app.config["MAX_CONTENT_LENGTH"] = config.MAX_REQUEST_BYTES
 
 
 # ── Rate limiting — UNIT 8 ────────────────────────────────────────────────────
@@ -205,50 +204,44 @@ def submit():
     except ValueError:
         return _reject("text_too_short", "text must contain enough model tokens to score.")
 
-    # Milestone 3: the model runs alone; scoring and labels follow next.
-    confidence = model_score
-    guess = "ai" if model_score >= 0.5 else "human"
-    label = "One-signal implementation; final label pending."
+    style_score = stylometry.style_signal(text)
+    confidence = scoring.combine_signals(model_score, style_score)
+    guess, label = scoring.score_to_label(confidence)
     content_id = str(uuid.uuid4())
     audit.log_decision(
         content_id=content_id, creator_id=creator, guess=guess,
-        model_score=model_score, combined_score=confidence, label=label,
+        model_score=model_score, style_score=style_score,
+        combined_score=confidence, label=label,
     )
     return jsonify({
         "content_id": content_id, "guess": guess, "confidence": confidence,
-        "label": label, "model_score": model_score, "style_score": None,
+        "label": label, "model_score": model_score, "style_score": style_score,
         "status": "decided",
     })
 
 
 @app.post("/appeal")
 def appeal():
-    """
-    A writer says you got it wrong. ← TODO — Milestone 5
-
-    Expects JSON:
-        {"content_id": "...", "reasoning": "..."}
-
-    Should:
-      1. Check the content_id actually exists — `audit.entries_for(id)` tells
-         you. A typo here fails silently and looks like a broken endpoint,
-         which is the single most common way this milestone eats an hour.
-      2. Record the appeal with `audit.log_appeal(...)`, which moves the item
-         to `under_review`.
-      3. Confirm to the writer. No automatic re-checking needed.
-
-    This is the smallest endpoint in the project and the one that matters most
-    to the person on the other end. It's the only thing standing between a
-    wrong accusation and nothing at all.
-    """
-    payload = request.get_json(silent=True) or {}
-
-    # TODO: delete this and build the route.
+    """Append the writer's reasoning and preserve the original decision."""
+    payload, error = _json_object()
+    if error is not None:
+        return error
+    content_id, error = _required_string(payload, "content_id", 128)
+    if error is not None:
+        return error
+    reasoning, error = _required_string(payload, "reasoning", config.MAX_REASONING_CHARS)
+    if error is not None:
+        return error
+    original = next((entry for entry in audit.entries_for(content_id)
+                     if entry.get("status") == "decided"), None)
+    if original is None:
+        return _reject("content_not_found", "No submission exists with that content_id.", 404)
+    audit.log_appeal(content_id=content_id, creator_id=original["creator_id"], reasoning=reasoning)
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /appeal isn't built yet — see the TODO in app.py.",
-        "you_sent": payload,
-    }), 501
+        "content_id": content_id,
+        "status": "under_review",
+        "message": "Your appeal has been recorded. Your submission is under review.",
+    })
 
 
 # ── Already works ─────────────────────────────────────────────────────────────

@@ -216,10 +216,10 @@ def check_flask():
 
 def check_detector_model():
     """Is the ~550 MB model already downloaded?"""
-    from pathlib import Path as _P
-
-    cache = _P.home() / ".cache" / "huggingface" / "hub"
-    if cache.exists() and any("gpt2" in p.name for p in cache.iterdir()):
+    import config
+    cache = config.DETECTOR_CACHE
+    model_cache_name = "models--" + config.DETECTOR_MODEL.replace("/", "--")
+    if (cache / model_cache_name).exists():
         return report("PASS", "Detector model", "already downloaded")
     report(
         "WARN",

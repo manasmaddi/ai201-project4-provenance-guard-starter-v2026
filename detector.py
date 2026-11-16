@@ -69,9 +69,24 @@ def _load():
         ) from exc
 
     try:
-        _tokenizer = AutoTokenizer.from_pretrained(config.DETECTOR_MODEL)
-        _model = AutoModelForCausalLM.from_pretrained(config.DETECTOR_MODEL)
-        _model.eval()
+        # Reuse downloaded files without network checks on every fresh process.
+        # Fall back to downloading only when the local cache is incomplete.
+        for local_only in (True, False):
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    config.DETECTOR_MODEL, cache_dir=config.DETECTOR_CACHE,
+                    local_files_only=local_only,
+                )
+                model = AutoModelForCausalLM.from_pretrained(
+                    config.DETECTOR_MODEL, cache_dir=config.DETECTOR_CACHE,
+                    local_files_only=local_only,
+                )
+                model.eval()
+                _tokenizer, _model = tokenizer, model
+                break
+            except OSError:
+                if not local_only:
+                    raise
     except Exception as exc:  # noqa: BLE001
         raise DetectorUnavailable(
             f"Couldn't load '{config.DETECTOR_MODEL}': {exc}\n"
