@@ -26,6 +26,12 @@ PORT = int(os.getenv("PORT", "5000"))
 # anywhere else — so it turns itself off the moment HOST isn't loopback.
 DEBUG = os.getenv("AI201_DEBUG", "1") == "1" and HOST in ("127.0.0.1", "localhost")
 
+MAX_REQUEST_BYTES = 128 * 1024
+MAX_TEXT_CHARS = 20_000
+MIN_TEXT_WORDS = 3
+MAX_CREATOR_ID_CHARS = 128
+MAX_REASONING_CHARS = 5_000
+
 
 # ─── The local model ─────────────────────────────────────────────────────────
 # Your first signal runs a language model ON YOUR OWN MACHINE. No account, no
@@ -54,8 +60,19 @@ DETECTOR_MAX_TOKENS = 400
 # down BEFORE you code it, and to put the numbers in your README. Whatever you
 # decide, it goes here.
 
-WEIGHT_MODEL_SIGNAL = 0.5
-WEIGHT_STYLE_SIGNAL = 0.5
+WEIGHT_MODEL_SIGNAL = 0.60
+WEIGHT_STYLE_SIGNAL = 0.40
+DISAGREEMENT_THRESHOLD = 0.50
+DISAGREEMENT_SCORE_MIN = 0.35
+DISAGREEMENT_SCORE_MAX = 0.65
+
+STYLE_WEIGHT_SPREAD = 0.50
+STYLE_WEIGHT_VARIETY = 0.30
+STYLE_WEIGHT_PUNCTUATION = 0.20
+STYLE_SPREAD_SCALE = 1.0
+STYLE_PUNCTUATION_SCALE = 0.10
+STYLE_MIN_WORDS = 20
+STYLE_MIN_SENTENCES = 3
 
 
 # ─── Thresholds (Milestone 5) ────────────────────────────────────────────────
@@ -71,8 +88,8 @@ WEIGHT_STYLE_SIGNAL = 0.5
 # getting through. There is no setting that avoids the trade — only settings
 # that decide who pays for it.
 
-HUMAN_THRESHOLD = 0.35
-AI_THRESHOLD = 0.65
+HUMAN_THRESHOLD = 0.20
+AI_THRESHOLD = 0.80
 
 # ⚠️ One thing that catches people out in Milestone 5. A weighted average can
 # only land between its two inputs — so while `style_signal` is still the stub
